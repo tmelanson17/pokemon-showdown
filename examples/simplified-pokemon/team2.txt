@@ -1,0 +1,17 @@
+Snorlax @ Leftovers
+Ability: Thick Fat
+EVs: 252 HP / 4 Def / 252 SpD
+Careful Nature
+- Body Slam
+- Curse
+- Rest
+- Earthquake
+
+Gengar @ Choice Specs
+Ability: Cursed Body
+EVs: 4 Def / 252 SpA / 252 Spe
+Timid Nature
+- Shadow Ball
+- Sludge Wave
+- Focus Blast
+- Trick

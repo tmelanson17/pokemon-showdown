@@ -20,6 +20,7 @@ import type { Tournament } from './tournaments/index';
 import type { RoomSettings } from './rooms';
 import type { BestOfGame } from './room-battle-bestof';
 import type { GameTimerSettings } from '../sim/dex-formats';
+import type { BattleInitialState } from '../sim/initial-state';
 
 type ChannelIndex = 0 | 1 | 2 | 3 | 4;
 export type PlayerIndex = 1 | 2 | 3 | 4;
@@ -496,6 +497,8 @@ export interface RoomBattleOptions {
 	 * rather than a battle.
 	 */
 	isBestOfSubBattle?: boolean;
+	/** Custom turn-0 state (HP/status/active-vs-bench) to seed the battle with. */
+	initialState?: BattleInitialState;
 }
 
 export class RoomBattle extends RoomGame<RoomBattlePlayer> {
@@ -573,6 +576,7 @@ export class RoomBattle extends RoomGame<RoomBattlePlayer> {
 			roomid: this.roomid,
 			rated: ratedMessage,
 			seed: options.seed,
+			initialState: options.initialState,
 		};
 		if (options.inputLog) {
 			void this.stream.write(options.inputLog);

@@ -143,6 +143,10 @@ export const readyPromise = cleanupStale().then(() => {
 	Verifier.start(Config.subprocessescache);
 	TeamValidatorAsync.start(Config.subprocessescache);
 	Chat.start(Config.subprocessescache);
+	// Load chat plugins eagerly (normally lazy, on first Chat.parse call) so plugins that
+	// need to run startup logic - like simplified-pokemon's battle-setup watcher - are ready
+	// before any player connects, not just after the first chat message is parsed.
+	Chat.loadPlugins();
 
 	/*********************************************************
 	 * Monitor config file and display diagnostics

@@ -1,0 +1,18 @@
+Pikachu @ Light Ball
+Ability: Static
+Level: 50
+EVs: 252 Atk / 4 SpD / 252 Spe
+Jolly Nature
+- Volt Tackle
+- Iron Tail
+- Knock Off
+- Fake Out
+
+Charizard @ Charizardite Y
+Ability: Blaze
+EVs: 252 SpA / 4 SpD / 252 Spe
+Timid Nature
+- Fire Blast
+- Air Slash
+- Solar Beam
+- Roost

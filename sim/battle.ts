@@ -23,6 +23,7 @@ import { type MoveRequest, type ChoiceRequest, Side } from './side';
 import { State } from './state';
 import { BattleQueue, type Action } from './battle-queue';
 import { BattleActions } from './battle-actions';
+import { applyInitialState, type BattleInitialState } from './initial-state';
 import { Utils } from '../lib/utils';
 declare const __version: any;
 
@@ -74,6 +75,8 @@ interface BattleOptions {
 	forceRandomChance?: boolean; // force Battle#randomChance to always return true or false (used in some tests)
 	deserialized?: boolean;
 	strictChoices?: boolean; // whether invalid choices should throw
+	/** Custom turn-0 state (HP/status/active-vs-bench) to seed the battle with. */
+	initialState?: BattleInitialState;
 }
 
 interface EventListenerWithoutPriority {
@@ -153,6 +156,7 @@ export class Battle {
 	started: boolean;
 	ended: boolean;
 	winner?: string;
+	readonly initialState: BattleInitialState | null;
 
 	effect: Effect;
 	effectState: EffectState;
@@ -242,6 +246,7 @@ export class Battle {
 		this.midTurn = false;
 		this.started = false;
 		this.ended = false;
+		this.initialState = options.initialState || null;
 
 		this.effect = { id: '' } as Effect;
 		this.effectState = this.initEffectState({ id: '' });
@@ -2706,6 +2711,8 @@ export class Battle {
 				const subFormat = this.dex.formats.get(rule);
 				subFormat.onBattleStart?.call(this);
 			}
+
+			if (this.initialState) applyInitialState(this, this.initialState);
 
 			for (const side of this.sides) {
 				for (let i = 0; i < side.active.length; i++) {

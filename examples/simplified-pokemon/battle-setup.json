@@ -1,0 +1,19 @@
+{
+	"turn": 5,
+	"p1": {
+		"name": "PlayerOne",
+		"team": "team1.txt",
+		"active": [0],
+		"pokemon": [
+			{ "slot": 0, "hp": 120, "status": "brn" }
+		]
+	},
+	"p2": {
+		"name": "PlayerTwo",
+		"team": "team2.txt",
+		"active": [0],
+		"pokemon": [
+			{ "slot": 1, "hp": 0 }
+		]
+	}
+}
