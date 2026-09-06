@@ -1,3 +1,6 @@
+import { FS } from '../../lib/fs';
+
+const pokepasteBattles = new Set<RoomID>();
 /**
  * PokePaste Battle
  * Pokemon Showdown - http://pokemonshowdown.com/
@@ -78,6 +81,7 @@ export const commands: Chat.ChatCommands = {
 		if (!battleRoom) {
 			throw new Chat.ErrorMessage(`Failed to create battle room.`);
 		}
+		pokepasteBattles.add(battleRoom.roomid);
 
 		this.sendReply(`Created battle: ${battleRoom.roomid}`);
 		user1.popup(`|html|A battle has been created for you: <a href="/${battleRoom.roomid}">${battleRoom.roomid}</a>`);
@@ -86,4 +90,18 @@ export const commands: Chat.ChatCommands = {
 	pokepastebattlehelp: [
 		`/pokepastebattle format, name1, pokepasteurl1, name2, pokepasteurl2 - Creates a battle between two online users using teams loaded from PokePaste. Requires: & ~`,
 	],
+};
+
+export const handlers: Chat.Handlers = {
+	onBattleEnd(battle, winner, players) {
+		const roomid = battle.room.roomid;
+		if (!pokepasteBattles.has(roomid)) return;
+		pokepasteBattles.delete(roomid);
+
+		const log = battle.room.getLog(-1);
+		void (async () => {
+			await FS('logs/pokepastebattle').mkdirp();
+			await FS(`logs/pokepastebattle/${roomid}.log.txt`).write(log);
+		})();
+	},
 };
