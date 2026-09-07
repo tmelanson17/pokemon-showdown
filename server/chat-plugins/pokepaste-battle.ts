@@ -33,6 +33,10 @@ async function fetchPokePasteTeam(url: string): Promise<PokemonSet[]> {
 	if (!team || !team.length) {
 		throw new Chat.ErrorMessage(`Could not parse a team from ${url}.`);
 	}
+	// Ignore whatever level the paste specifies (or defaults to, e.g. Teams.import
+	// falls back to 100 if a set's `Level:` line wasn't parsed) - these battles are
+	// always level 50.
+	for (const set of team) set.level = 50;
 	return team;
 }
 
