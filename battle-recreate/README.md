@@ -33,6 +33,9 @@ present as their own log lines).
   lines degrade gracefully instead of aborting the whole replay.
 - `random-choice.js` — pure `request -> choice string` logic (ported from
   `sim/tools/random-player-ai.ts`), used to play turn N onward.
+- `describe-choice.js` — pure `(request, choice string) -> human-readable
+  description` logic, resolving move-slot/switch-target indices to
+  Pokemon/move names. Used for `--actions-out` and console output.
 - `state-snapshot.js` — plain-JSON snapshot of visible battle state, used
   by the test harness to compare reconstructed vs. live state.
 - `recreate.js` — the CLI script.
@@ -62,6 +65,15 @@ node battle-recreate/recreate.js <format> <logFile> <turnN> <paste1> <paste2> \
   actually produced for turn N onward. Without this flag, the CLI only
   prints the turn-N state snapshot and the chosen actions per turn to
   stdout — the recreated game's own protocol log isn't written anywhere.
+- `--actions-out=FILE` (optional) — write each side's chosen action for
+  every turn N onward to FILE as JSON: `[{turn, p1, p2}, ...]`, where
+  `p1`/`p2` are human-readable descriptions built from the same
+  `ChoiceRequest` the choice was picked from (e.g.
+  `"Primarina: Moonblast -> slot 2"`, `"Iron Hands: switch to Ursaluna"`;
+  see `describe-choice.js`), or `null` if that side had no pending request
+  that turn. Only covers the random-play phase — turns `1..N-1` are
+  applied directly from the log, never go through `battle.choose()`, and
+  so have no action to report.
 
 ## Testing
 

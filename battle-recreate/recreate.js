@@ -20,25 +20,34 @@
  *                    directly-applied turns 1..N-1 plus the randomly-played
  *                    remainder, in the same `|...` line format as a real
  *                    replay) to FILE
+ *   --actions-out=FILE  Write each side's chosen action for every turn
+ *                    N onward (the random-play phase) to FILE as JSON:
+ *                    [{turn, p1, p2}, ...], p1/p2 being a human-readable
+ *                    description using Pokemon/move names (e.g. "Primarina:
+ *                    Moonblast -> slot 2"), or null if that side had no
+ *                    pending request that turn. Turns 1..N-1 have no
+ *                    equivalent -- they're direct state mutation, not
+ *                    choices.
  */
 
 const fs = require('fs');
 const path = require('path');
 
-const { BattleStream } = require(path.join(__dirname, '..', 'dist', 'sim', 'battle-stream'));
 const { extractChannelMessages } = require(path.join(__dirname, '..', 'dist', 'sim', 'battle'));
 const { Teams } = require(path.join(__dirname, '..', 'dist', 'sim', 'teams'));
 const { Dex } = require(path.join(__dirname, '..', 'dist', 'sim', 'dex'));
 const { PRNG } = require(path.join(__dirname, '..', 'dist', 'sim', 'prng'));
+const { RoomBattleStream } = require(path.join(__dirname, '..', 'dist', 'server', 'room-battle'));
 
 const { parseLog, entriesBeforeTurn, usedSpeciesBySide } = require('./event-log');
 const { LogApplier } = require('./apply');
 const { pickChoice } = require('./random-choice');
+const { describeChoice } = require('./describe-choice');
 const { snapshotState } = require('./state-snapshot');
 
 function parseArgs(argv) {
 	const positional = [];
-	const options = { seed: null, maxTurns: 50, quiet: false, out: null };
+	const options = { seed: null, maxTurns: 50, quiet: false, out: null, actionsOut: null };
 	for (const arg of argv) {
 		if (arg.startsWith('--seed=')) {
 			options.seed = arg.slice('--seed='.length).split(',').map(Number);
@@ -48,6 +57,8 @@ function parseArgs(argv) {
 			options.quiet = true;
 		} else if (arg.startsWith('--out=')) {
 			options.out = arg.slice('--out='.length);
+		} else if (arg.startsWith('--actions-out=')) {
+			options.actionsOut = arg.slice('--actions-out='.length);
 		} else {
 			positional.push(arg);
 		}
@@ -55,7 +66,7 @@ function parseArgs(argv) {
 	if (positional.length !== 5) {
 		throw new Error(
 			'Usage: recreate.js <format> <logFile> <turnN> <paste1> <paste2> ' +
-			'[--seed=a,b,c,d] [--max-turns=N] [--quiet] [--out=FILE]'
+			'[--seed=a,b,c,d] [--max-turns=N] [--quiet] [--out=FILE] [--actions-out=FILE]'
 		);
 	}
 	const [formatArg, logFile, turnNStr, paste1File, paste2File] = positional;
@@ -85,7 +96,7 @@ function recreateAtTurn(formatArg, eventLog, turnN, team1, team2, { quiet } = {}
 		);
 	}
 
-	const stream = new BattleStream({ keepAlive: false });
+	const stream = new RoomBattleStream({ keepAlive: false });
 	stream.write(`>start ${JSON.stringify({ formatid: format.id })}`);
 	stream.write(`>player p1 ${JSON.stringify({ name: 'Player 1', team: Teams.pack(team1) })}`);
 	stream.write(`>player p2 ${JSON.stringify({ name: 'Player 2', team: Teams.pack(team2) })}`);
@@ -191,8 +202,10 @@ function playRandomly(battle, { seed, maxTurns, quiet }) {
 
 		const c1 = pickChoice(p1req, prng);
 		const c2 = pickChoice(p2req, prng);
-		if (!quiet) console.log(`[turn ${battle.turn}] p1: ${c1 || '(wait)'} | p2: ${c2 || '(wait)'}`);
-		actionsLog.push({ turn: battle.turn, p1: c1, p2: c2 });
+		const p1Desc = describeChoice(p1req, c1);
+		const p2Desc = describeChoice(p2req, c2);
+		if (!quiet) console.log(`[turn ${battle.turn}] p1: ${p1Desc || '(wait)'} | p2: ${p2Desc || '(wait)'}`);
+		actionsLog.push({ turn: battle.turn, p1: p1Desc || null, p2: p2Desc || null });
 
 		if (c1) battle.choose('p1', c1);
 		if (c2) battle.choose('p2', c2);
@@ -238,6 +251,14 @@ function main() {
 		const combinedLog = [...preTurnLines, ...postTurnLines].join('\n');
 		fs.writeFileSync(args.out, combinedLog);
 		if (!args.quiet) console.log(`Wrote recreated battle log to ${args.out}`);
+	}
+
+	if (args.actionsOut) {
+		// Only covers turn N onward -- turns 1..N-1 were applied directly from
+		// the log (see recreateAtTurn), never went through battle.choose(), and
+		// so have no choice string to report.
+		fs.writeFileSync(args.actionsOut, JSON.stringify(actions, null, 2));
+		if (!args.quiet) console.log(`Wrote per-turn actions to ${args.actionsOut}`);
 	}
 
 	return { battle, actions };
