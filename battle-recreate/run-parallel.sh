@@ -24,23 +24,26 @@ mkdir -p "$OUTDIR"
 cd "$(dirname "$0")/.."
 
 pids=()
-for i in 1 2 3; do
-	node battle-recreate/recreate.js "$FORMAT" "$LOG" "$TURN" "$PASTE1" "$PASTE2" \
-		--seed="$i,$((i + 1)),$((i + 2)),$((i + 3))" \
-		--out="$OUTDIR/battle$i.txt" \
-		--actions-out="$OUTDIR/actions$i.json" \
-		--quiet &
-	pids+=("$!")
-done
+for j in $(seq 1 50); do
+	for i in $(seq 1 3); do
+		sum=$((i + j))
+		padded=$(printf "%02d" "$sum")
+		node battle-recreate/recreate.js "$FORMAT" "$LOG" "$TURN" "$PASTE1" "$PASTE2" \
+			--seed="$sum,$((sum + 1)),$((sum + 2)),$((sum + 3))" \
+			--out="$OUTDIR/battle${padded}.txt" \
+			--actions-out="$OUTDIR/actions${padded}.json" \
+			--quiet &
+		pids+=("$!")
+	done
 
-status=0
-for i in "${!pids[@]}"; do
-	if wait "${pids[$i]}"; then
-		echo "instance $((i + 1)): ok -> $OUTDIR/battle$((i + 1)).txt, $OUTDIR/actions$((i + 1)).json"
-	else
-		echo "instance $((i + 1)): FAILED"
-		status=1
-	fi
+	status=0
+	for i in "${!pids[@]}"; do
+		if wait "${pids[$i]}"; then
+			echo "instance $((i + 1)): ok -> $OUTDIR/battle$((i + 1)).txt, $OUTDIR/actions$((i + 1)).json"
+		else
+			echo "instance $((i + 1)): FAILED"
+			status=1
+		fi
+	done
 done
-
 exit $status
